@@ -280,6 +280,8 @@
   <label class="fld"><span>模型名称</span><input id="cModel" list="models" placeholder="deepseek-flash" autocomplete="off" spellcheck="false"><datalist id="models"><option value="deepseek-flash"><option value="deepseek-v4-pro"></datalist></label>
   <div class="btnrow"><button class="pill" id="testBtn">测试连接</button></div>
   <div class="sub" id="llmMsg">密钥只保存在这台设备的浏览器里，不会写进代码，也不会出现在备份文件里。</div>
+  <div class="cap">Token 用量</div>
+  <div class="sub" id="usageInfo"></div>
 
   <div class="cap">专注</div>
   <label class="fld"><span>每日目标（分钟，0 为不设）</span><input id="cGoal" type="number" min="0" max="1440" inputmode="numeric"></label>
@@ -383,6 +385,25 @@ async function askPersist(){
 /* ================= 设置（含 API 密钥） ================= */
 let cfg = {key:'', base:'https://api.deepseek.com', model:'deepseek-flash', goal:120, wake:true, lastBackup:0, goalDay:''};
 const saveCfg = () => store.set('sc:cfg', cfg);
+
+/* ================= Token 用量统计（按天累计，保存在本机） ================= */
+let usage = {days:{}};                         // {'2026-10-09':{i:输入,o:输出,c:调用次数}}
+const saveUsage = () => store.set('sc:usage', usage);
+function addUsage(i, o){
+  const k = dayKey(Date.now());
+  const d = usage.days[k] || (usage.days[k] = {i:0, o:0, c:0});
+  d.i += i; d.o += o; d.c += 1; saveUsage();
+}
+function renderUsage(){
+  const sum = (a,b)=>({i:a.i+b.i, o:a.o+b.o, c:a.c+b.c});
+  const zero = {i:0,o:0,c:0};
+  const today = usage.days[dayKey(Date.now())] || zero;
+  let week = zero, all = zero;
+  for(const k in usage.days) all = sum(all, usage.days[k]);
+  for(let n=0;n<7;n++){ const d = usage.days[dayKey(Date.now()-n*86400000)]; if(d) week = sum(week, d); }
+  const f = x => `${x.c} 次调用 · 输入 ${x.i.toLocaleString()} · 输出 ${x.o.toLocaleString()} · 共 ${(x.i+x.o).toLocaleString()}`;
+  $('#usageInfo').innerHTML = `今天：${f(today)}<br>近 7 天：${f(week)}<br>累计：${f(all)}<br><span style="opacity:.8">只统计本页发出的请求，单位 tokens。实际扣费以 DeepSeek 开放平台的用量页面为准。</span>`;
+}
 
 /* ================= 北京时间 ================= */
 const TZ = 'Asia/Shanghai';
@@ -571,6 +592,7 @@ async function callLLM(system, messages, maxTokens=300, timeout=15000){
       });
       const d = await r.json().catch(()=>({}));
       if(!r.ok) throw new Error((d.error && d.error.message) || ('HTTP '+r.status));
+      if(d.usage) addUsage(d.usage.prompt_tokens||0, d.usage.completion_tokens||0);
       text = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
     }else{
       const r = await fetch('https://api.anthropic.com/v1/messages',{
@@ -579,6 +601,7 @@ async function callLLM(system, messages, maxTokens=300, timeout=15000){
       });
       const d = await r.json();
       if(!d.content) throw new Error('还没有填写 API 密钥');
+      if(d.usage) addUsage(d.usage.input_tokens||0, d.usage.output_tokens||0);
       text = d.content.map(i=>i.type==='text'?i.text:'').join('');
     }
     text = (text||'').trim();
@@ -890,6 +913,7 @@ twoTap($('#clearChat'), '清空聊天记录', ()=>{ chatLog = []; feed.innerHTML
 function fillSettings(){
   $('#cKey').value = cfg.key || ''; $('#cBase').value = cfg.base || ''; $('#cModel').value = cfg.model || '';
   $('#cGoal').value = cfg.goal; $('#cWake').checked = !!cfg.wake;
+  renderUsage();
   const last = cfg.lastBackup ? `上次备份：${dateFmt.format(cfg.lastBackup)} ${hhmm(cfg.lastBackup)}` : '还没有备份过';
   $('#saveInfo').textContent = `保存位置：${storeLayers.join('、') || '尚未写入'} · 持久存储：${persistState}。${last}。导出备份是最稳妥的保险。`;
 }
@@ -913,7 +937,7 @@ $('#testBtn').onclick = async ()=>{
 };
 
 function buildBackup(){
-  return JSON.stringify({app:'study-companion', v:2, exportedAt:Date.now(), prefs, cfg:{...cfg, key:''}, records, chat:chatLog.slice(-300), bgimg:bgImgData});
+  return JSON.stringify({app:'study-companion', v:2, exportedAt:Date.now(), prefs, cfg:{...cfg, key:''}, records, chat:chatLog.slice(-300), bgimg:bgImgData, usage});
 }
 const markBackup = ()=>{ cfg.lastBackup = Date.now(); saveCfg(); fillSettings(); };
 $('#bkExport').onclick = ()=>{
@@ -944,6 +968,13 @@ function importBackup(text){
   chatLog.sort((a,b)=>a.t-b.t);
   if(o.prefs) prefs = {...prefs, ...o.prefs};
   if(o.cfg) cfg = {...cfg, ...o.cfg, key:cfg.key, lastBackup:Math.max(cfg.lastBackup||0, o.cfg.lastBackup||0)};
+  if(o.usage && o.usage.days){
+    for(const k in o.usage.days){
+      const a = usage.days[k] || {i:0,o:0,c:0}, b = o.usage.days[k];
+      usage.days[k] = {i:Math.max(a.i,b.i||0), o:Math.max(a.o,b.o||0), c:Math.max(a.c,b.c||0)};
+    }
+    saveUsage();
+  }
   if(o.bgimg){ bgImgData = o.bgimg; store.set('sc:bgimg', o.bgimg); }
   applyPrefsUI(); rebuildFeed(); render(); fillSettings();
   saveRecords(); flushChat(); savePrefs(); saveCfg();
@@ -1014,6 +1045,7 @@ $('#inp').onkeydown = e=>{ if(e.key==='Enter' && !e.isComposing) sendMsg(); };
   askPersist();
   const p = await store.get('sc:prefs'); if(p) prefs = {...prefs, ...p};
   const c = await store.get('sc:cfg'); if(c) cfg = {...cfg, ...c};
+  const u = await store.get('sc:usage'); if(u && u.days) usage = u;
   records = ((await store.get('sc:records')) || []).map(r=>({id:r.id||newId(), name:'', notes:[], ...r}));
   // 上次页面在计时中被关闭：用最后一次心跳补记（带上名字和备注）
   const st = await store.get('sc:state');
