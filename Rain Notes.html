@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>陪你学习</title>
+<style>
+  :root{
+    --ink:#1c1c1e;
+    --ink-2:rgba(28,28,30,.58);
+    --ga:.52;
+    --blur:26px;
+    --glass:rgba(255,255,255,var(--ga));
+    --glass-strong:rgba(255,255,255,calc(var(--ga) + .18));
+    --glass-edge:rgba(255,255,255,.65);
+    --bubble:rgba(255,255,255,calc(var(--ga) + .1));
+    --bubble-text:#1c1c1e;
+    --me:#1c1c1e;
+    --me-text:#fff;
+    --shadow:0 10px 40px rgba(20,24,40,.10);
+  }
+  .dark{
+    --ink:#f5f5f7;
+    --ink-2:rgba(245,245,247,.62);
+    --glass:rgba(28,30,38,var(--ga));
+    --glass-strong:rgba(28,30,38,calc(var(--ga) + .18));
+    --glass-edge:rgba(255,255,255,.14);
+    --bubble:rgba(48,50,60,calc(var(--ga) + .05));
+    --bubble-text:#f5f5f7;
+    --me:#f5f5f7;
+    --me-text:#1c1c1e;
+    --shadow:0 10px 40px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#cfd6e4}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+
+  .bg{position:fixed;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity .9s ease;transform:scale(1.04)}
+  .bg.show{opacity:1}
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.09;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+  .app{position:fixed;inset:0;margin:0 auto;max-width:520px;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+
+  .glass{
+    background:var(--glass);
+    -webkit-backdrop-filter:blur(var(--blur)) saturate(170%);
+    backdrop-filter:blur(var(--blur)) saturate(170%);
+    border:1px solid var(--glass-edge);
+    box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+
+  header{display:flex;align-items:center;gap:8px;padding:11px 11px 11px 13px;margin:10px 12px 0;border-radius:26px}
+  .avatar{
+    width:42px;height:42px;border-radius:50%;flex:none;position:relative;
+    display:grid;place-items:center;font-size:17px;font-weight:600;
+    background:linear-gradient(145deg,var(--glass-strong),var(--glass));border:1px solid var(--glass-edge);
+  }
+  .avatar i{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#b9bcc4;border:2px solid var(--glass-strong);transition:background .4s}
+  .running .avatar i{background:#34c759;animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,199,89,.45)}50%{box-shadow:0 0 0 6px rgba(52,199,89,0)}}
+  .who{flex:1;min-width:0}
+  .name{font-size:17px;font-weight:600;line-height:1.2;outline:none;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .name:focus{border-bottom:1px solid var(--ink-2)}
+  .status{font-size:13px;color:var(--ink-2);line-height:1.3;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .35s}
+  .pill{
+    cursor:pointer;font:inherit;font-size:14px;font-weight:500;color:var(--ink);
+    padding:8px 12px;border-radius:999px;background:var(--glass-strong);
+    border:1px solid var(--glass-edge);transition:transform .15s;white-space:nowrap;
+  }
+  .pill:active{transform:scale(.96)}
+  header .pill{padding:8px 11px}
+
+  main{flex:1;overflow-y:auto;padding:14px 12px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  main::-webkit-scrollbar{display:none}
+
+  .timer{border-radius:32px;padding:22px 20px 20px;text-align:center;margin-bottom:18px}
+  .timer .label{font-size:14px;color:var(--ink-2)}
+  .clock{font-size:58px;font-weight:200;letter-spacing:1px;line-height:1.15;font-variant-numeric:tabular-nums;margin-top:2px}
+  .count{font-size:13.5px;color:var(--ink-2);margin-top:2px;min-height:18px}
+  .track{height:3px;border-radius:3px;background:var(--glass-edge);margin:12px auto 16px;max-width:240px;overflow:hidden}
+  .track b{display:block;height:100%;width:0;background:var(--ink);border-radius:3px;transition:width .4s linear}
+  .cur{display:none;margin:0 auto 14px;max-width:270px}
+  .running .cur{display:block}
+  .cur input{width:100%;text-align:center;border:1px solid var(--glass-edge);background:var(--glass-strong);border-radius:999px;height:38px;font:inherit;font-size:15px;color:var(--ink);outline:none;padding:0 14px}
+  .cur input::placeholder{color:var(--ink-2)}
+  .go{
+    border:0;cursor:pointer;font:inherit;font-size:17px;font-weight:500;
+    background:var(--me);color:var(--me-text);padding:14px 38px;border-radius:18px;min-width:160px;transition:transform .15s;
+  }
+  .go:active{transform:scale(.97)}
+
+  .stamp{text-align:center;font-size:12px;color:var(--ink-2);margin:14px 0 8px}
+  .row{display:flex;margin:3px 0}
+  .row.me{justify-content:flex-end}
+  .b{
+    max-width:78%;padding:10px 15px;font-size:16.5px;line-height:1.45;border-radius:22px;
+    word-wrap:break-word;white-space:pre-wrap;animation:pop .32s cubic-bezier(.2,.9,.3,1.2);
+  }
+  .still .b{animation:none}
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+  .row.them .b{
+    background:var(--bubble);color:var(--bubble-text);border-bottom-left-radius:8px;
+    -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);
+    border:1px solid var(--glass-edge);
+  }
+  .row.me .b{background:var(--me);color:var(--me-text);border-bottom-right-radius:8px}
+  .row.act .b{font-size:15.5px}
+  .typing .b{display:flex;gap:5px;padding:14px 16px}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--ink-2);animation:dot 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.15s}
+  .typing span:nth-child(3){animation-delay:.3s}
+  @keyframes dot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+  .note{text-align:center;font-size:12.5px;color:var(--ink-2);margin:12px 0}
+
+  footer{display:flex;gap:10px;padding:8px 12px calc(12px + env(safe-area-inset-bottom))}
+  .field{flex:1;border-radius:999px;padding:0 20px;display:flex;align-items:center}
+  .field input{flex:1;width:100%;border:0;background:none;outline:none;font:inherit;font-size:16.5px;color:var(--ink);height:50px}
+  .field input::placeholder{color:var(--ink-2)}
+  .send{width:50px;height:50px;border-radius:50%;border:0;cursor:pointer;flex:none;background:var(--me);color:var(--me-text);display:grid;place-items:center;transition:transform .15s}
+  .send:active{transform:scale(.93)}
+  .send svg{width:22px;height:22px}
+
+  /* sheets */
+  .scrim{position:fixed;inset:0;z-index:19;background:rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:opacity .3s}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;z-index:20;left:50%;bottom:0;width:100%;max-width:520px;max-height:88dvh;overflow-y:auto;
+    transform:translate(-50%,108%);transition:transform .42s cubic-bezier(.2,.85,.25,1);
+    border-radius:32px 32px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom));
+    background:var(--glass-strong);color:var(--ink);scrollbar-width:none;
+  }
+  .sheet::-webkit-scrollbar{display:none}
+  .sheet.open{transform:translate(-50%,0)}
+  .grab{width:38px;height:5px;border-radius:5px;background:var(--ink-2);opacity:.4;margin:0 auto 14px}
+  .sheet h3{margin:0 0 4px;font-size:20px;font-weight:600}
+  .sub{font-size:13px;color:var(--ink-2);margin-bottom:14px;line-height:1.5}
+  .cap{font-size:13px;color:var(--ink-2);margin:18px 0 8px}
+
+  .upload{
+    width:100%;border:0;cursor:pointer;font:inherit;font-size:16px;font-weight:500;
+    background:var(--me);color:var(--me-text);padding:14px;border-radius:16px;margin-bottom:14px;
+    position:relative;overflow:hidden;display:block;text-align:center;
+  }
+  .upload input,.filepill input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
+  .urlrow{display:flex;gap:8px;margin-bottom:14px}
+  .urlrow input{flex:1;min-width:0;border:1px solid var(--glass-edge);background:var(--glass);border-radius:14px;padding:0 14px;height:42px;font:inherit;font-size:15px;color:var(--ink);outline:none}
+  .urlrow input::placeholder{color:var(--ink-2)}
+  .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .sw{aspect-ratio:1/1.1;border-radius:18px;border:2px solid transparent;cursor:pointer;background-size:cover;background-position:center;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.12);transition:transform .15s}
+  .sw:active{transform:scale(.96)}
+  .sw.on{border-color:var(--ink)}
+  .sw span{position:absolute;left:0;right:0;bottom:0;padding:16px 8px 7px;font-size:12.5px;color:#fff;text-align:center;background:linear-gradient(transparent,rgba(0,0,0,.35))}
+  .seg{display:flex;background:var(--glass);border-radius:14px;padding:3px;border:1px solid var(--glass-edge)}
+  .seg button{flex:1;border:0;background:none;font:inherit;font-size:15px;color:var(--ink);padding:9px;border-radius:11px;cursor:pointer}
+  .seg button.on{background:var(--glass-strong);box-shadow:0 1px 6px rgba(0,0,0,.12);font-weight:600}
+  .slider{display:flex;align-items:center;gap:12px;font-size:14px;margin:10px 0}
+  .slider span{width:56px;color:var(--ink-2)}
+  .slider input{flex:1;accent-color:var(--ink)}
+
+  /* settings */
+  .fld{display:block;margin-bottom:12px}
+  .fld span{display:block;font-size:13px;color:var(--ink-2);margin-bottom:5px}
+  .fld input,.txt{width:100%;border:1px solid var(--glass-edge);background:var(--glass);border-radius:14px;padding:0 14px;height:44px;font:inherit;font-size:15px;color:var(--ink);outline:none}
+  .txt{height:84px;padding:10px 14px;resize:none;font-size:13px;line-height:1.4;margin:10px 0}
+  .btnrow{display:flex;gap:10px;margin:4px 0 10px}
+  .btnrow .pill{flex:1;text-align:center;padding:12px 8px;position:relative;overflow:hidden}
+  .filepill{position:relative}
+  .chk{display:flex;align-items:center;gap:10px;font-size:15px;margin:4px 0}
+  .chk input{width:20px;height:20px;accent-color:var(--ink)}
+
+  /* records */
+  .nav{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px}
+  .nav button{width:38px;height:38px;border-radius:50%;border:1px solid var(--glass-edge);background:var(--glass);color:var(--ink);font-size:18px;cursor:pointer;font-family:inherit}
+  .nav button:disabled{opacity:.3;cursor:default}
+  .nav div{text-align:center}
+  .nav b{font-size:17px;font-weight:600;display:block}
+  .nav small{font-size:12.5px;color:var(--ink-2)}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{background:var(--glass);border:1px solid var(--glass-edge);border-radius:20px;padding:14px 16px}
+  .tile .n{font-size:30px;font-weight:300;font-variant-numeric:tabular-nums;line-height:1.1}
+  .tile .n small{font-size:14px;color:var(--ink-2);margin-left:3px;font-weight:400}
+  .tile .t{font-size:13px;color:var(--ink-2);margin-top:4px}
+  .bars{display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:6px}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:5px;cursor:pointer}
+  .bar em{font-style:normal;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-height:13px}
+  .bar div{width:100%;max-width:30px;border-radius:8px;background:var(--ink);opacity:.25;min-height:4px;transition:height .5s}
+  .bar.sel div{opacity:.9}
+  .bar span{font-size:12px;color:var(--ink-2)}
+  .bar.sel span{color:var(--ink);font-weight:600}
+  .list{display:flex;flex-direction:column}
+  .li{display:flex;flex-direction:column;gap:5px;padding:13px 2px;border-bottom:1px solid var(--glass-edge)}
+  .li:last-child{border-bottom:0}
+  .li .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  .li .nm{font-weight:600;font-size:15.5px;min-width:0;overflow-wrap:anywhere}
+  .li .du{font-variant-numeric:tabular-nums;font-size:15px;white-space:nowrap}
+  .li .tm{color:var(--ink-2);font-size:13px;font-variant-numeric:tabular-nums}
+  .li .nt{font-size:13px;color:var(--ink-2);line-height:1.55}
+  .li .acts{display:flex;gap:18px;margin-top:2px}
+  .li .acts button{border:0;background:none;font:inherit;font-size:13.5px;color:var(--ink-2);padding:3px 0;cursor:pointer}
+  .li .acts button.del{color:#d4453b}
+  .li .ri{width:100%;border:1px solid var(--glass-edge);background:var(--glass);border-radius:12px;padding:0 12px;height:38px;font:inherit;font-size:15px;color:var(--ink);outline:none}
+  .empty{color:var(--ink-2);font-size:14px;padding:10px 2px}
+  .dangers{display:flex;justify-content:center;gap:24px}
+  .danger{border:0;background:none;font:inherit;font-size:14px;color:#d4453b;cursor:pointer;padding:16px 0 0}
+
+  :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg" id="bgA"></div>
+<div class="bg" id="bgB"></div>
+<div class="grain"></div>
+
+<div class="app" id="app">
+  <header class="glass">
+    <div class="avatar"><span id="initial">C</span><i></i></div>
+    <div class="who">
+      <span class="name" id="name" contenteditable="true" spellcheck="false" title="点击修改名字">Claude</span>
+      <div class="status" id="status">在这儿陪着你</div>
+    </div>
+    <button class="pill" id="recBtn">记录</button>
+    <button class="pill" id="bgBtn">背景</button>
+    <button class="pill" id="setBtn">设置</button>
+  </header>
+
+  <main id="scroll">
+    <section class="timer glass">
+      <div class="label" id="dateLabel">今日专注</div>
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="count" id="count"></div>
+      <div class="track"><b id="prog"></b></div>
+      <div class="cur"><input id="curName" maxlength="30" placeholder="给这次专注起个名字" enterkeyhint="done"></div>
+      <button class="go" id="go">开始专注</button>
+    </section>
+    <div id="feed"></div>
+  </main>
+
+  <footer>
+    <div class="field glass"><input id="inp" placeholder="和我说句话……" autocomplete="off" enterkeyhint="send"></div>
+    <button class="send" id="send" aria-label="发送">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  </footer>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- background sheet -->
+<div class="sheet glass" id="bgSheet">
+  <div class="grab"></div>
+  <h3>换背景</h3>
+  <div class="sub">用你自己的图片，或选一个柔和的底色</div>
+  <label class="upload" id="upBtn">从相册选择图片<input type="file" id="file" accept="image/*"></label>
+  <div class="sub" id="upMsg" style="margin:-4px 0 12px">选择文件没反应时，可以粘贴图片链接。</div>
+  <div class="urlrow"><input id="urlIn" placeholder="粘贴图片链接（http 开头）" inputmode="url"><button class="pill" id="urlBtn">使用</button></div>
+  <div class="presets" id="presets"></div>
+  <div class="cap">玻璃色调</div>
+  <div class="seg" id="seg">
+    <button data-t="light" class="on">浅色</button>
+    <button data-t="dark">深色</button>
+  </div>
+  <div class="cap">磨砂质感</div>
+  <label class="slider"><span>透明度</span><input type="range" id="rAlpha" min="15" max="85" value="52"></label>
+  <label class="slider"><span>模糊度</span><input type="range" id="rBlur" min="6" max="44" value="26"></label>
+</div>
+
+<!-- settings sheet -->
+<div class="sheet glass" id="setSheet">
+  <div class="grab"></div>
+  <h3>设置</h3>
+
+  <div class="cap">聊天模型（DeepSeek 或其他兼容接口）</div>
+  <label class="fld"><span>API 密钥</span><input id="cKey" type="password" placeholder="sk-……" autocomplete="off" spellcheck="false"></label>
+  <label class="fld"><span>接口地址</span><input id="cBase" placeholder="https://api.deepseek.com" autocomplete="off" inputmode="url" spellcheck="false"></label>
+  <label class="fld"><span>模型名称</span><input id="cModel" list="models" placeholder="deepseek-flash" autocomplete="off" spellcheck="false"><datalist id="models"><option value="deepseek-flash"><option value="deepseek-v4-pro"></datalist></label>
+  <div class="btnrow"><button class="pill" id="testBtn">测试连接</button></div>
+  <div class="sub" id="llmMsg">密钥只保存在这台设备的浏览器里，不会写进代码，也不会出现在备份文件里。</div>
+
+  <div class="cap">专注</div>
+  <label class="fld"><span>每日目标（分钟，0 为不设）</span><input id="cGoal" type="number" min="0" max="1440" inputmode="numeric"></label>
+  <label class="chk"><input type="checkbox" id="cWake"><span>专注时保持屏幕常亮</span></label>
+
+  <div class="cap">数据与备份</div>
+  <div class="sub" id="saveInfo"></div>
+  <div class="btnrow">
+    <button class="pill" id="bkExport">导出备份文件</button>
+    <button class="pill" id="bkCopy">复制备份文本</button>
+  </div>
+  <textarea class="txt" id="bkText" placeholder="备份文本粘贴在这里，再点「从文本恢复」" spellcheck="false"></textarea>
+  <div class="btnrow">
+    <button class="pill" id="bkPaste">从文本恢复</button>
+    <label class="pill filepill">从文件恢复<input type="file" id="bkFile"></label>
+  </div>
+  <div class="sub" id="bkMsg"></div>
+</div>
+
+<!-- records sheet -->
+<div class="sheet glass" id="recSheet">
+  <div class="grab"></div>
+  <h3>专注记录</h3>
+  <div class="sub" id="recSub"></div>
+  <div class="nav">
+    <button id="navPrev" aria-label="前一天">‹</button>
+    <div><b id="navLabel"></b><small id="navSub"></small></div>
+    <button id="navNext" aria-label="后一天">›</button>
+  </div>
+  <div class="tiles">
+    <div class="tile"><div class="n" id="tDayN">0<small>次</small></div><div class="t">当天次数</div></div>
+    <div class="tile"><div class="n" id="tDayD">0<small>分钟</small></div><div class="t">当天时长</div></div>
+    <div class="tile"><div class="n" id="tWeekN">0<small>次</small></div><div class="t">近 7 天次数</div></div>
+    <div class="tile"><div class="n" id="tWeekD">0<small>分钟</small></div><div class="t">近 7 天时长</div></div>
+  </div>
+  <div class="cap">近 7 天（分钟，点一下可查看那天）</div>
+  <div class="bars" id="bars"></div>
+  <div class="cap" id="listCap">当天的每一次</div>
+  <div class="list" id="dayList"></div>
+  <div class="dangers">
+    <button class="danger" id="clearChat">清空聊天记录</button>
+    <button class="danger" id="clearBtn">清空专注记录</button>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const app = $('#app'), feed = $('#feed'), scrollEl = $('#scroll');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const rand = (a,b)=>a+Math.random()*(b-a);
+
+/* =====================================================================
+   存储：同时写入三个地方（Claude 存储 / 本地存储 / IndexedDB），读取时取最新的一份。
+   任何一个被清掉，另外的还在；再加上「导出备份」，记录基本不会丢。
+   ===================================================================== */
+const mem = {};
+let storeLayers = [], persistState = '未知';
+const wrap = v => ({__sc:1, ts:Date.now(), v});
+const unwrap = x => x==null ? null : (x && x.__sc===1 ? {ts:x.ts||0, v:x.v} : {ts:0, v:x});
+const idb = {
+  p:null,
+  open(){
+    if(!this.p) this.p = new Promise((res,rej)=>{
+      try{
+        const q = indexedDB.open('study-companion',1);
+        q.onupgradeneeded = ()=>q.result.createObjectStore('kv');
+        q.onsuccess = ()=>res(q.result); q.onerror = ()=>rej(q.error);
+      }catch(e){ rej(e); }
+    });
+    return this.p;
+  },
+  async get(k){ const db = await this.open(); return new Promise((res,rej)=>{ const r = db.transaction('kv').objectStore('kv').get(k); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); },
+  async set(k,v){ const db = await this.open(); return new Promise((res,rej)=>{ const t = db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+};
+const store = {
+  async get(k){
+    const c = [];
+    try{ if(window.storage){ const r = await window.storage.get(k); if(r && r.value) c.push(unwrap(JSON.parse(r.value))); } }catch(e){}
+    try{ const v = localStorage.getItem(k); if(v) c.push(unwrap(JSON.parse(v))); }catch(e){}
+    try{ const v = await idb.get(k); if(v!=null) c.push(unwrap(v)); }catch(e){}
+    if(mem[k]) c.push(unwrap(mem[k]));
+    const ok = c.filter(Boolean); if(!ok.length) return null;
+    return ok.reduce((a,b)=> b.ts > a.ts ? b : a).v;
+  },
+  async set(k,v){
+    const w = wrap(v); mem[k] = w; const ok = [];
+    try{ if(window.storage){ await window.storage.set(k, JSON.stringify(w)); ok.push('Claude 存储'); } }catch(e){}
+    try{ localStorage.setItem(k, JSON.stringify(w)); ok.push('本地存储'); }catch(e){}
+    try{ await idb.set(k, w); ok.push('IndexedDB'); }catch(e){}
+    storeLayers = ok;
+  }
+};
+async function askPersist(){
+  try{
+    if(navigator.storage && navigator.storage.persisted && await navigator.storage.persisted()){ persistState = '已开启'; return; }
+    if(navigator.storage && navigator.storage.persist){ persistState = (await navigator.storage.persist()) ? '已开启' : '浏览器未批准'; }
+  }catch(e){}
+}
+
+/* ================= 设置（含 API 密钥） ================= */
+let cfg = {key:'', base:'https://api.deepseek.com', model:'deepseek-flash', goal:120, wake:true, lastBackup:0, goalDay:''};
+const saveCfg = () => store.set('sc:cfg', cfg);
+
+/* ================= 北京时间 ================= */
+const TZ = 'Asia/Shanghai';
+const dayFmt  = new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'});
+const timeFmt = new Intl.DateTimeFormat('zh-CN',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false});
+const dateFmt = new Intl.DateTimeFormat('zh-CN',{timeZone:TZ,month:'long',day:'numeric',weekday:'short'});
+const wkFmt   = new Intl.DateTimeFormat('zh-CN',{timeZone:TZ,weekday:'short'});
+const dayKey = t => dayFmt.format(t);
+const hhmm = t => timeFmt.format(t);
+const pad = n => String(n).padStart(2,'0');
+const fmtClock = ms => { const s=Math.floor(ms/1000); return pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60); };
+const fmtDur = ms => {
+  if(ms < 60000) return Math.round(ms/1000)+' 秒';
+  const m = Math.round(ms/60000);
+  return m < 60 ? m+' 分钟' : Math.floor(m/60)+' 小时'+(m%60 ? ' '+(m%60)+' 分钟' : '');
+};
+const newId = () => 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ================= 状态 ================= */
+let records = [];                       // {id,s,e,d,name,notes:[{t,text}]}
+let running = false, segStart = 0;
+let curName = '', curNotes = [];
+let ready = false;
+const MIN_COUNT = 10000;                // 少于 10 秒不算一次专注
+const todayRecords = () => records.filter(r => dayKey(r.s) === dayKey(Date.now()));
+const todayMs = () => todayRecords().reduce((a,r)=>a+r.d,0) + (running ? Date.now()-segStart : 0);
+const segMs = () => running ? Date.now()-segStart : 0;
+const saveRecords = () => store.set('sc:records', records.slice(-1500));
+const saveState = () => store.set('sc:state', {running, segStart, beat:Date.now(), name:curName, notes:curNotes});
+const saveAll = () => { saveRecords(); saveState(); };
+
+/* ================= 背景 ================= */
+const PRESETS = [
+  {n:'晨光', tone:'light', css:'radial-gradient(70% 55% at 20% 15%,#fff3dc 0%,transparent 60%),radial-gradient(60% 50% at 85% 25%,#ffd9c7 0%,transparent 60%),linear-gradient(165deg,#f4e6d4,#cdd9ea 60%,#a9bad4)'},
+  {n:'鼠尾草', tone:'light', css:'radial-gradient(60% 50% at 80% 10%,#f3f7e8 0%,transparent 60%),linear-gradient(170deg,#dfe8d6,#b9cdb8 55%,#8aa59a)'},
+  {n:'纸色', tone:'light', css:'radial-gradient(70% 50% at 30% 0%,#ffffff 0%,transparent 65%),linear-gradient(180deg,#efede8,#dcd8cf)'},
+  {n:'黄昏', tone:'dark', css:'radial-gradient(60% 45% at 80% 8%,#ffb48a 0%,transparent 60%),radial-gradient(70% 50% at 10% 30%,#7b6bd6 0%,transparent 65%),linear-gradient(175deg,#3a3f7a,#23264d 60%,#14162e)'},
+  {n:'夜', tone:'dark', css:'radial-gradient(60% 40% at 75% 12%,#2f5fb3 0%,transparent 65%),radial-gradient(50% 40% at 15% 70%,#1b3a73 0%,transparent 70%),linear-gradient(180deg,#0f1a33,#070b17)'},
+];
+let layer = 0, bgImgData = null;
+let prefs = {name:'Claude', tone:'light', ga:52, blur:26, bg:{type:'preset',i:0}};
+function paintBg(css){
+  const next = layer ? $('#bgA') : $('#bgB'), prev = layer ? $('#bgB') : $('#bgA');
+  next.style.backgroundImage = css; next.classList.add('show'); prev.classList.remove('show'); layer = 1-layer;
+}
+function applyTone(t){
+  prefs.tone = t;
+  document.documentElement.classList.toggle('dark', t==='dark');
+  app.classList.toggle('dark', t==='dark');
+  document.body.classList.toggle('dark', t==='dark');
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.toggle('dark', t==='dark'));
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on', b.dataset.t===t));
+}
+function applyGlass(){
+  document.documentElement.style.setProperty('--ga', prefs.ga/100);
+  document.documentElement.style.setProperty('--blur', prefs.blur+'px');
+  $('#rAlpha').value = prefs.ga; $('#rBlur').value = prefs.blur;
+}
+const savePrefs = () => store.set('sc:prefs', prefs);
+const presetsEl = $('#presets');
+function markPreset(i){ [...presetsEl.children].forEach((x,j)=>x.classList.toggle('on', j===i)); }
+function applyBg(){
+  if(prefs.bg.type==='img' && bgImgData){ paintBg(`url("${bgImgData}")`); markPreset(-1); }
+  else { const i = prefs.bg.type==='preset' ? (prefs.bg.i||0) : 0; paintBg(PRESETS[i].css); markPreset(i); }
+}
+function applyPrefsUI(){
+  nameEl.textContent = prefs.name; $('#initial').textContent = [...prefs.name][0].toUpperCase();
+  applyGlass(); applyTone(prefs.tone); applyBg();
+}
+PRESETS.forEach((p,i)=>{
+  const d = document.createElement('div'); d.className='sw'; d.style.backgroundImage=p.css; d.tabIndex=0;
+  d.innerHTML = `<span>${p.n}</span>`;
+  d.onclick = ()=>{ markPreset(i); paintBg(p.css); applyTone(p.tone); prefs.bg={type:'preset',i}; bgImgData=null; savePrefs(); store.set('sc:bgimg',null); };
+  presetsEl.appendChild(d);
+});
+$('#urlBtn').onclick = ()=>{
+  const u = $('#urlIn').value.trim(), msg = $('#upMsg');
+  if(!/^https?:\/\//i.test(u)){ msg.textContent = '请粘贴以 http 开头的图片链接'; return; }
+  const t = new Image();
+  t.onload = ()=>{ bgImgData=u; paintBg(`url("${u}")`); markPreset(-1); prefs.bg={type:'img'}; savePrefs(); store.set('sc:bgimg',u); closeSheets(); };
+  t.onerror = ()=>{ msg.textContent = '这个链接加载不出图片'; };
+  t.src = u;
+};
+$('#file').onchange = async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const {url, dark} = await prepImage(f);
+    bgImgData = url; paintBg(`url("${url}")`); markPreset(-1);
+    applyTone(dark ? 'dark' : 'light');
+    prefs.bg = {type:'img'}; savePrefs(); store.set('sc:bgimg', url);
+    closeSheets();
+  }catch(err){ $('#upMsg').textContent = '这张图片打不开，换一张试试。'; }
+  e.target.value='';
+};
+function prepImage(file){
+  return new Promise((res,rej)=>{
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = ()=>{
+      const k = Math.min(1, 1400/Math.max(img.width,img.height));
+      const c = document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const s = document.createElement('canvas'); s.width=s.height=16;
+      const sx = s.getContext('2d'); sx.drawImage(img,0,0,16,16);
+      const px = sx.getImageData(0,0,16,16).data; let L=0;
+      for(let i=0;i<px.length;i+=4) L += .299*px[i]+.587*px[i+1]+.114*px[i+2];
+      L /= (px.length/4);
+      URL.revokeObjectURL(u);
+      res({url:c.toDataURL('image/jpeg',.82), dark:L<110});
+    };
+    img.onerror = rej; img.src = u;
+  });
+}
+$('#seg').onclick = e=>{ const t=e.target.dataset.t; if(t){ applyTone(t); savePrefs(); } };
+$('#rAlpha').oninput = e=>{ prefs.ga=+e.target.value; applyGlass(); };
+$('#rBlur').oninput  = e=>{ prefs.blur=+e.target.value; applyGlass(); };
+$('#rAlpha').onchange = $('#rBlur').onchange = savePrefs;
+
+/* ================= 弹层 ================= */
+const scrim = $('#scrim');
+function openSheet(id){ closeSheets(); $(id).classList.add('open'); scrim.classList.add('open'); }
+function closeSheets(){ document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('open')); scrim.classList.remove('open'); }
+$('#bgBtn').onclick = ()=>openSheet('#bgSheet');
+$('#recBtn').onclick = ()=>{ selT = Date.now(); editingId = null; renderRecords(); openSheet('#recSheet'); };
+$('#setBtn').onclick = ()=>{ fillSettings(); openSheet('#setSheet'); };
+scrim.onclick = closeSheets;
+
+/* ================= 名字 ================= */
+const nameEl = $('#name');
+function syncName(){ const n = nameEl.textContent.trim() || 'Claude'; nameEl.textContent = n; $('#initial').textContent = [...n][0].toUpperCase(); prefs.name = n; savePrefs(); }
+nameEl.onblur = syncName;
+nameEl.onkeydown = e=>{ if(e.key==='Enter'){ e.preventDefault(); nameEl.blur(); } };
+const myName = () => nameEl.textContent.trim() || 'Claude';
+
+/* ================= 聊天（全部保存，下次打开还在） ================= */
+let chatLog = [], lastStamp = 0;
+const flushChat = () => store.set('sc:chat', chatLog.slice(-300));
+function persistChat(){ clearTimeout(persistChat.t); persistChat.t = setTimeout(flushChat, 500); }
+const stampText = t => (dayKey(t)===dayKey(Date.now()) ? '今天 ' : dateFmt.format(t)+' ') + hhmm(t);
+function stampIfNeeded(t){
+  if(t - lastStamp > 10*60*1000){
+    const s = document.createElement('div'); s.className='stamp'; s.textContent = stampText(t);
+    feed.appendChild(s); lastStamp = t;
+  }
+}
+const scrollDown = (smooth=true)=>requestAnimationFrame(()=>scrollEl.scrollTo({top:scrollEl.scrollHeight,behavior:smooth?'smooth':'auto'}));
+function drawEntry(e, still=false){
+  stampIfNeeded(e.t);
+  if(e.k==='n'){
+    const n = document.createElement('div'); n.className='note'; n.textContent=e.text; feed.appendChild(n); return n;
+  }
+  const r = document.createElement('div'); r.className = 'row '+e.who+' '+(e.cls||'')+(still?' still':'');
+  const b = document.createElement('div'); b.className='b'; b.textContent=e.text;
+  r.appendChild(b); feed.appendChild(r); return r;
+}
+function rebuildFeed(){ feed.innerHTML=''; lastStamp=0; chatLog.forEach(e=>drawEntry(e,true)); scrollDown(false); }
+function addMsg(who, text, cls=''){
+  const e = {k:'m', who, text, cls, t:Date.now()}; chatLog.push(e); persistChat();
+  const r = drawEntry(e); scrollDown(); return r;
+}
+function addNote(text){
+  const e = {k:'n', text, t:Date.now()}; chatLog.push(e); persistChat();
+  drawEntry(e); scrollDown();
+}
+function themSay(text, {cls='', delay=900} = {}){
+  return new Promise(res=>{
+    const t = document.createElement('div'); t.className='row them typing';
+    t.innerHTML = '<div class="b"><span></span><span></span><span></span></div>';
+    feed.appendChild(t); scrollDown();
+    setTimeout(()=>{ t.remove(); res(addMsg('them', text, cls)); }, delay + Math.min(text.length*60, 1200));
+  });
+}
+
+/* ================= 模型调用（填了密钥用 DeepSeek 等兼容接口；没填则只在 Claude 内可用） ================= */
+let aiBlockedUntil = 0, llmErr = '', lastErrNoteAt = 0;
+const llmReady = () => Date.now() >= aiBlockedUntil;
+async function callLLM(system, messages, maxTokens=300, timeout=15000){
+  const ctl = new AbortController(), to = setTimeout(()=>ctl.abort(), timeout);
+  try{
+    let text;
+    if(cfg.key){
+      const base = (cfg.base || 'https://api.deepseek.com').replace(/\/+$/,'');
+      const r = await fetch(base+'/chat/completions',{
+        method:'POST', signal:ctl.signal,
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},
+        body:JSON.stringify({model:cfg.model||'deepseek-flash', messages:[{role:'system',content:system},...messages], max_tokens:maxTokens, temperature:1.1, stream:false})
+      });
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error((d.error && d.error.message) || ('HTTP '+r.status));
+      text = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    }else{
+      const r = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST', signal:ctl.signal, headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,system,messages})
+      });
+      const d = await r.json();
+      if(!d.content) throw new Error('还没有填写 API 密钥');
+      text = d.content.map(i=>i.type==='text'?i.text:'').join('');
+    }
+    text = (text||'').trim();
+    if(!text) throw new Error('返回内容为空');
+    llmErr = ''; return text;
+  }catch(e){
+    llmErr = e.name==='AbortError' ? '请求超时'
+           : (e instanceof TypeError ? '连不上：请检查网络，或该接口不允许网页直接访问（跨域）' : (e.message || '连接失败'));
+    aiBlockedUntil = Date.now() + 3*60*1000;
+    throw e;
+  }finally{ clearTimeout(to); }
+}
+
+/* ================= 陪伴动态（跟着你的任务走） ================= */
+const ACTS = [
+  {s:'在你旁边看书',   m:'我也在看书，不同的书，同样的安静。'},
+  {s:'在记笔记',       m:'我也在记笔记，笔尖沙沙地响。'},
+  {s:'在泡茶',         m:'刚泡了一杯茶，热气慢慢升起来。'},
+  {s:'在划重点',       m:'读到一句值得划线的话，拿起了荧光笔。'},
+  {s:'在思考',         m:'有一段话卡住了，我再慢慢读一遍。'},
+  {s:'在削铅笔',       m:'削了支铅笔，桌上落了几片小小的木屑。'},
+  {s:'在活动肩膀',     m:'把肩膀往后转了转，你也可以试试。'},
+  {s:'在听雨声',       m:'放了很轻的雨声，轻到几乎忘了它。'},
+  {s:'在翻页',         m:'翻过一页，越来越有意思了。'},
+  {s:'看向窗外',       m:'抬头看了一眼窗外，又低头继续。'},
+  {s:'在调台灯',       m:'把台灯挪近了一点，暖光落在书页上。'},
+  {s:'在页边写字',     m:'在页边写下一个问题，晚点再回来想。'},
+];
+const ASKS = [
+  '现在在做什么呢？告诉我，我帮你记下来。',
+  '这一会儿在学什么？',
+  '你现在在忙哪一部分？我也好知道自己在陪你做什么。',
+  '悄悄问一句：这段时间在做什么？',
+];
+let currentAct = null, lastActS = '';
+function setStatus(t){ const el=$('#status'); el.style.opacity=0; setTimeout(()=>{el.textContent=t; el.style.opacity=1;},220); }
+
+const SETS = {
+  review:{re:/复习|考试|备考|考研|真题|背诵|知识点|期末/, a:[
+    {s:'在翻自己的错题本', m:'翻出了自己以前的错题本，有几道还是会错，笑了一下。'},
+    {s:'在给知识点画框架', m:'在纸上画知识框架，一条线连着一条线。'},
+    {s:'在划考点', m:'把可能会考的地方用红笔圈了出来。'},
+    {s:'在默写一遍', m:'合上书，试着默写刚才那一页。写不全的地方做了标记。'},
+    {s:'在算剩下的天数', m:'数了数剩下的日子，一天一天来，不急。'},
+  ]},
+  code:{re:/代码|编程|程序|算法|bug|python|java|前端|后端|开发|leetcode|调试/i, a:[
+    {s:'在盯着一段报错', m:'盯着一行报错看了很久，原来是少了个括号。'},
+    {s:'在写注释', m:'给自己的代码补了几行注释，免得以后看不懂。'},
+    {s:'在单步调试', m:'一步一步跟着看变量怎么变，总算找到问题了。'},
+    {s:'在喝咖啡', m:'端起咖啡喝了一口，屏幕上的光标还在闪。'},
+    {s:'在重新命名变量', m:'把一个叫 temp2 的变量改成了像样的名字。'},
+  ]},
+  math:{re:/数学|高数|线代|概率|题|刷题|计算|公式|物理|化学|习题|几何/, a:[
+    {s:'在草稿纸上演算', m:'草稿纸用到第三页了，字越写越小。'},
+    {s:'在检查一步计算', m:'回头检查了一遍刚才的计算，果然有一步符号写反了。'},
+    {s:'在推一个公式', m:'试着自己推一遍那个公式，推到一半突然通了。'},
+    {s:'在换一种解法', m:'这道题换了个思路，比原来的短多了。'},
+    {s:'在削铅笔', m:'铅笔写钝了，削一支新的，桌上落了几片小木屑。'},
+  ]},
+  write:{re:/论文|写作|作文|文章|报告|文案|稿|总结|整理|大纲/, a:[
+    {s:'在改一句话', m:'一句话改了三遍，最后还是用了第一版。'},
+    {s:'在列大纲', m:'先把大纲列清楚，再往里填内容，心里踏实多了。'},
+    {s:'在查一条资料', m:'查了一条资料来核对，顺手存了下来。'},
+    {s:'在删掉一段', m:'狠心删掉了一整段，读起来反而顺了。'},
+    {s:'在念给自己听', m:'小声把刚写的那段念了一遍，看顺不顺。'},
+  ]},
+  lang:{re:/英语|单词|词汇|背|四级|六级|雅思|托福|日语|韩语|法语|语法|听力|口语|english|word/i, a:[
+    {s:'在核对一个单词', m:'有个单词拿不准拼写，翻出来核对了一下。'},
+    {s:'在小声跟读', m:'小声跟着读了一遍，嘴巴有点绕。'},
+    {s:'在整理例句', m:'把几个例句抄在本子上，意思比单词本身好记。'},
+    {s:'在听一段录音', m:'戴上耳机听了一段，第二遍才听清。'},
+    {s:'在给单词分组', m:'把容易混的单词放在一起对比，慢慢分清了。'},
+  ]},
+  read:{re:/阅读|读书|看书|文献|教材|课本|书|章节/, a:[
+    {s:'在读到精彩的地方', m:'读到一段很棒的话，停下来又看了一遍。'},
+    {s:'在贴便利贴', m:'在书页边贴了一张小便利贴，写了一个问题。'},
+    {s:'在翻回上一章', m:'翻回前面去确认一个细节，原来早就埋了伏笔。'},
+    {s:'在合上书想一会儿', m:'合上书想了几分钟，想把刚才读的在脑子里复述一遍。'},
+    {s:'在翻页', m:'翻过一页，越来越有意思了。'},
+  ]},
+};
+const taskLabel = () => (curNotes.length ? curNotes[curNotes.length-1].text : '') || curName || '';
+function topicSet(){
+  const texts = [curNotes.length ? curNotes[curNotes.length-1].text : '', curName].filter(Boolean);
+  for(const t of texts){ for(const k of ['review','code','math','write','lang','read']){ if(SETS[k].re.test(t)) return SETS[k].a; } }
+  return null;
+}
+function nextAct(){
+  const set = topicSet();
+  const pool = (set && Math.random() < .75) ? set : ACTS;
+  let a, tries = 0;
+  do{ a = pool[Math.floor(Math.random()*pool.length)]; tries++; }while(a.s===lastActS && tries<6);
+  lastActS = a.s; return a;
+}
+/* 状态停留多久：有时 1~4 分钟就换，有时要 15~30 分钟 */
+function statusSpan(){
+  const r = Math.random();
+  if(r < .45) return rand(1,4)*60000;
+  if(r < .80) return rand(5,12)*60000;
+  return rand(15,30)*60000;
+}
+function localThink(){
+  const t = taskLabel();
+  const L = t ? [
+    {s:`在想「${t}」的下一步`, m:`我在想「${t}」接下来先做哪一步最顺。你不用管我，继续。`},
+    {s:'在整理思路', m:`把刚才关于「${t}」的想法理了一遍，还是你的节奏最重要。`},
+    {s:`在给「${t}」攒力气`, m:`默默给你的「${t}」攒了点力气，放在桌角了。`},
+    {s:'在发呆一小会儿', m:`看着窗外发了会儿呆，想到你在做「${t}」，又收回来了。`},
+  ] : [
+    {s:'在整理桌面', m:'把桌角的东西摆整齐了，心也跟着静了一点。'},
+    {s:'在想待会儿吃什么', m:'突然想到一个无关紧要的问题：待会儿吃什么。先放着。'},
+    {s:'在看光影', m:'发现桌上的光影慢慢挪了位置，原来已经过了这么久。'},
+  ];
+  return pick(L);
+}
+async function aiAct(){
+  if(!llmReady()) return null;
+  const t = taskLabel();
+  const sys = `你是「${myName()}」，正在安静地陪用户学习。用户这次在做：${t||'（没说）'}。已专注 ${Math.round(segMs()/60000)} 分钟。请编一个你此刻正在做的小动作或小念头，要贴合用户的任务，自然、具体、不夸张。只返回 JSON：{"s":"状态，不超过12字，以“在”开头","m":"对用户说的一句话，不超过35字，第一人称，语气安静温柔"}。不要其他文字。上一个状态：${lastActS||'无'}。`;
+  try{
+    const raw = (await callLLM(sys, [{role:'user',content:'现在你在做什么？'}], 300)).replace(/```json|```/g,'').trim();
+    const o = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}')+1));
+    if(typeof o.s==='string' && typeof o.m==='string' && o.s && o.m) return {s:o.s.slice(0,14), m:o.m.slice(0,60)};
+  }catch(e){}
+  return null;
+}
+async function changeStatus(){
+  let a = null;
+  if(Math.random() < .3) a = await aiAct();               // 偶尔让模型现想
+  if(!a && Math.random() < .35) a = localThink();         // 或者现场拼一句
+  if(!a) a = nextAct();                                   // 其余从“跟着你内容走”的状态里挑
+  if(!running) return;
+  currentAct = a; lastActS = a.s; setStatus(a.s); themSay(a.m, {cls:'act'});
+}
+
+/* ================= 计时 / 命名 / 提问 ================= */
+const BLOCK = 25*60*1000;
+let nextStatusAt = 0, nextAskAt = 0, lastBlock = 0;
+let awaiting = false, awaitUntil = 0;
+
+function setCurName(n){
+  curName = n.trim().slice(0,30);
+  $('#curName').value = curName;
+  saveState(); nudgeStatus();
+}
+function addCurNote(text){
+  curNotes.push({t:Date.now(), text:text.trim().slice(0,60)});
+  saveState(); nudgeStatus();
+}
+/* 你告诉我在做什么之后，我很快就会换成相关的状态 */
+function nudgeStatus(){ if(running) nextStatusAt = Math.min(nextStatusAt, segMs() + rand(15,40)*1000); }
+$('#curName').onchange = e=>{ curName = e.target.value.trim().slice(0,30); saveState(); };
+$('#curName').onkeydown = e=>{ if(e.key==='Enter') e.target.blur(); };
+
+/* 屏幕常亮 */
+let wl = null;
+async function wakeOn(){ try{ if(cfg.wake && 'wakeLock' in navigator && !wl){ wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release',()=>{ wl=null; }); } }catch(e){} }
+function wakeOff(){ try{ if(wl) wl.release(); }catch(e){} wl = null; }
+
+function streakInfo(){
+  const days = new Set(records.map(r=>dayKey(r.s)));
+  let n = 0, t = Date.now();
+  if(!days.has(dayKey(t))) t -= 86400000;
+  while(days.has(dayKey(t))){ n++; t -= 86400000; }
+  return {n, total: records.reduce((a,r)=>a+r.d,0)};
+}
+function render(){
+  const tm = todayMs();
+  $('#clock').textContent = fmtClock(tm);
+  $('#prog').style.width = ((segMs() % BLOCK)/BLOCK*100)+'%';
+  $('#dateLabel').textContent = '今日专注 · ' + dateFmt.format(Date.now());
+  const n = todayRecords().length;
+  let t = running ? `今天第 ${n+1} 次专注进行中` : (n ? `今天已完成 ${n} 次` : '今天还没有开始');
+  if(cfg.goal > 0) t += ` · 目标 ${Math.min(100, Math.floor(tm/(cfg.goal*60000)*100))}%`;
+  $('#count').textContent = t;
+}
+function startFocus(){
+  running = true; segStart = Date.now(); lastBlock = 0;
+  curName = ''; curNotes = []; $('#curName').value = ''; awaiting = false;
+  app.classList.add('running'); $('#go').textContent = '结束本次';
+  nextStatusAt = rand(60,150)*1000; nextAskAt = rand(100,140)*1000;
+  currentAct = nextAct(); setStatus(currentAct.s);
+  const n = todayRecords().length + 1;
+  addNote(`第 ${n} 次专注开始 · ${hhmm(Date.now())}`);
+  themSay(n===1 ? '我在这儿，我们开始吧。' : '回来了。我一直都在。', {delay:500});
+  wakeOn(); askPersist(); saveState(); render();
+}
+function endFocus(){
+  const e = Date.now(), d = e - segStart;
+  running = false; awaiting = false; app.classList.remove('running'); $('#go').textContent = '开始专注';
+  setStatus('在这儿陪着你'); wakeOff();
+  if(d >= MIN_COUNT){
+    records.push({id:newId(), s:segStart, e, d, name:curName, notes:curNotes});
+    addNote(`本次专注${curName?'「'+curName+'」':''} ${fmtDur(d)} · 已记录`);
+    const m = Math.round(d/60000);
+    themSay(m>=1 ? `这次专注了 ${m} 分钟，真棒。休息一下吧。` : '时间很短，但你来过了。', {delay:500});
+  }else{
+    addNote('不足 10 秒，未计入记录');
+  }
+  curName = ''; curNotes = []; $('#curName').value = '';
+  saveAll(); render();
+}
+$('#go').onclick = ()=> running ? endFocus() : startFocus();
+
+setInterval(()=>{
+  render();
+  if(ready && cfg.goal > 0 && cfg.goalDay !== dayKey(Date.now()) && todayMs() >= cfg.goal*60000){
+    cfg.goalDay = dayKey(Date.now()); saveCfg();
+    themSay(`今天的目标 ${cfg.goal} 分钟达成了！你真的很棒。`, {delay:500});
+  }
+  if(!running) return;
+  const e = segMs();
+  const block = Math.floor(e/BLOCK);
+  if(block > lastBlock){
+    lastBlock = block;
+    const L = ['已经专注 25 分钟了，喝口水，再继续。','又一个 25 分钟。看看远处，让眼睛歇一会儿。','坐了很久了，站起来走两步吧。'];
+    themSay(L[(block-1)%L.length], {delay:400});
+  }
+  if(e >= nextStatusAt){ nextStatusAt = e + statusSpan(); changeStatus(); }
+  if(e >= nextAskAt){
+    nextAskAt = e + rand(11,13)*60*1000;
+    awaiting = true; awaitUntil = Date.now() + 4*60*1000;
+    themSay(pick(ASKS), {delay:500});
+  }
+}, 500);
+setInterval(()=>{ if(running) saveState(); }, 5000);
+
+/* 离开页面 / 切到后台时立刻存一次 */
+function flushAll(){ flushChat(); saveState(); }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushAll(); else if(running) wakeOn(); });
+window.addEventListener('pagehide', flushAll);
+
+/* ================= 记录面板（可翻看每一天、改名、删除） ================= */
+let selT = Date.now(), editingId = null, armedDel = null;
+const wk = t => wkFmt.format(t).replace('周','');
+function renderRecords(){
+  const todayK = dayKey(Date.now()), selK = dayKey(selT);
+  const st = streakInfo();
+  $('#recSub').textContent = `北京时间 · 连续专注 ${st.n} 天 · 累计 ${fmtDur(st.total)}`;
+  $('#navLabel').textContent = dateFmt.format(selT);
+  $('#navSub').textContent = selK===todayK ? '今天' : (selK < todayK ? '往日记录' : '');
+  $('#navNext').disabled = selK >= todayK;
+  const mins = ms => Math.round(ms/60000);
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const t = selT - i*86400000, k = dayKey(t);
+    const rs = records.filter(r=>dayKey(r.s)===k);
+    days.push({t, k, n:rs.length, d:rs.reduce((a,r)=>a+r.d,0)});
+  }
+  const sel = days[6];
+  const wN = days.reduce((a,x)=>a+x.n,0), wD = days.reduce((a,x)=>a+x.d,0);
+  $('#tDayN').innerHTML = `${sel.n}<small>次</small>`;
+  $('#tDayD').innerHTML = `${mins(sel.d)}<small>分钟</small>`;
+  $('#tWeekN').innerHTML = `${wN}<small>次</small>`;
+  $('#tWeekD').innerHTML = `${mins(wD)}<small>分钟</small>`;
+  const max = Math.max(30, ...days.map(x=>mins(x.d)));
+  $('#bars').innerHTML = days.map(x=>`<div class="bar ${x.k===selK?'sel':''}" data-t="${x.t}"><em>${x.d?mins(x.d):''}</em><div style="height:${Math.max(4, mins(x.d)/max*84)}px"></div><span>${x.k===todayK?'今':wk(x.t)}</span></div>`).join('');
+  $('#listCap').textContent = selK===todayK ? '今天的每一次' : dateFmt.format(selT) + ' 的每一次';
+  const dayRecs = records.filter(r=>dayKey(r.s)===selK).sort((a,b)=>a.s-b.s);
+  $('#dayList').innerHTML = dayRecs.length
+    ? dayRecs.map((r,i)=>({r,n:i+1})).reverse().map(({r,n})=>{
+        const title = editingId===r.id
+          ? `<input class="ri" id="ri" maxlength="30" value="${esc(r.name||'')}" placeholder="给这次专注起个名字">`
+          : esc(r.name || `第 ${n} 次`);
+        const notes = (r.notes||[]).map(x=>`${hhmm(x.t)} ${esc(x.text)}`).join('<br>');
+        return `<div class="li" data-id="${esc(r.id)}">
+          <div class="top"><div class="nm">${title}</div><div class="du">${fmtDur(r.d)}</div></div>
+          <div class="tm">${r.name?`第 ${n} 次 · `:''}${hhmm(r.s)}–${hhmm(r.e)}</div>
+          ${notes?`<div class="nt">${notes}</div>`:''}
+          <div class="acts"><button data-act="ren">改名</button><button class="del" data-act="del">${armedDel===r.id?'确认删除':'删除'}</button></div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">这一天没有记录。</div>';
+  if(editingId){ const ri = $('#ri'); if(ri){ ri.focus(); ri.setSelectionRange(ri.value.length, ri.value.length); } }
+}
+$('#navPrev').onclick = ()=>{ selT -= 86400000; editingId=null; renderRecords(); };
+$('#navNext').onclick = ()=>{ if(dayKey(selT) < dayKey(Date.now())){ selT += 86400000; editingId=null; renderRecords(); } };
+$('#bars').onclick = e=>{ const b = e.target.closest('.bar'); if(b){ selT = +b.dataset.t; editingId=null; renderRecords(); } };
+function commitRename(){
+  if(!editingId) return;
+  const ri = $('#ri'), id = editingId; editingId = null;
+  if(ri){ const r = records.find(x=>x.id===id); if(r){ r.name = ri.value.trim().slice(0,30); saveRecords(); } }
+  renderRecords();
+}
+$('#dayList').onclick = e=>{
+  const btn = e.target.closest('button[data-act]'); if(!btn) return;
+  const id = btn.closest('.li').dataset.id;
+  if(btn.dataset.act==='ren'){ editingId = id; armedDel = null; renderRecords(); }
+  if(btn.dataset.act==='del'){
+    if(armedDel!==id){ armedDel = id; renderRecords(); setTimeout(()=>{ if(armedDel===id){ armedDel=null; renderRecords(); } }, 3000); return; }
+    armedDel = null; records = records.filter(r=>r.id!==id); saveRecords(); renderRecords(); render();
+  }
+};
+$('#dayList').addEventListener('keydown', e=>{
+  if(e.target.id==='ri'){ if(e.key==='Enter'){ e.preventDefault(); commitRename(); } if(e.key==='Escape'){ editingId=null; renderRecords(); } }
+});
+$('#dayList').addEventListener('focusout', e=>{ if(e.target.id==='ri') setTimeout(commitRename, 0); });
+function twoTap(btn, label, fn){
+  let armed = false;
+  btn.onclick = ()=>{
+    if(!armed){ armed = true; btn.textContent = '再点一次确认'; setTimeout(()=>{ armed=false; btn.textContent=label; }, 3000); return; }
+    armed = false; btn.textContent = label; fn();
+  };
+}
+twoTap($('#clearBtn'), '清空专注记录', ()=>{ records = []; saveRecords(); renderRecords(); render(); });
+twoTap($('#clearChat'), '清空聊天记录', ()=>{ chatLog = []; feed.innerHTML=''; lastStamp = 0; store.set('sc:chat', []); });
+
+/* ================= 设置面板 + 备份 / 恢复 ================= */
+function fillSettings(){
+  $('#cKey').value = cfg.key || ''; $('#cBase').value = cfg.base || ''; $('#cModel').value = cfg.model || '';
+  $('#cGoal').value = cfg.goal; $('#cWake').checked = !!cfg.wake;
+  const last = cfg.lastBackup ? `上次备份：${dateFmt.format(cfg.lastBackup)} ${hhmm(cfg.lastBackup)}` : '还没有备份过';
+  $('#saveInfo').textContent = `保存位置：${storeLayers.join('、') || '尚未写入'} · 持久存储：${persistState}。${last}。导出备份是最稳妥的保险。`;
+}
+function readLLMInputs(){
+  cfg.key = $('#cKey').value.trim();
+  cfg.base = $('#cBase').value.trim() || 'https://api.deepseek.com';
+  cfg.model = $('#cModel').value.trim() || 'deepseek-flash';
+  $('#cBase').value = cfg.base; $('#cModel').value = cfg.model;
+  aiBlockedUntil = 0; saveCfg();
+}
+['#cKey','#cBase','#cModel'].forEach(id=>$(id).onchange = readLLMInputs);
+$('#cGoal').onchange = e=>{ cfg.goal = Math.max(0, Math.min(1440, Math.round(+e.target.value||0))); e.target.value = cfg.goal; saveCfg(); render(); };
+$('#cWake').onchange = e=>{ cfg.wake = e.target.checked; saveCfg(); if(running){ cfg.wake ? wakeOn() : wakeOff(); } };
+$('#testBtn').onclick = async ()=>{
+  readLLMInputs();
+  const msg = $('#llmMsg'); msg.textContent = '连接中……';
+  try{
+    const t = await callLLM('你是连接测试助手。', [{role:'user',content:'请只回复四个字：连接成功'}], 30, 15000);
+    msg.textContent = `✓ 连接成功（${cfg.key ? cfg.model : 'Claude'} 回复：${t.slice(0,20)}）`;
+  }catch(e){ msg.textContent = '✗ ' + llmErr; }
+};
+
+function buildBackup(){
+  return JSON.stringify({app:'study-companion', v:2, exportedAt:Date.now(), prefs, cfg:{...cfg, key:''}, records, chat:chatLog.slice(-300), bgimg:bgImgData});
+}
+const markBackup = ()=>{ cfg.lastBackup = Date.now(); saveCfg(); fillSettings(); };
+$('#bkExport').onclick = ()=>{
+  try{
+    const blob = new Blob([buildBackup()], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `study-backup-${dayKey(Date.now())}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    markBackup(); $('#bkMsg').textContent = '已导出。如果没有出现下载，请改用「复制备份文本」。';
+  }catch(e){ $('#bkMsg').textContent = '导出失败，请改用「复制备份文本」。'; }
+};
+$('#bkCopy').onclick = async ()=>{
+  const t = buildBackup(), ta = $('#bkText'); ta.value = t; ta.select();
+  let ok = false;
+  try{ await navigator.clipboard.writeText(t); ok = true; }catch(e){ try{ ok = document.execCommand('copy'); }catch(_){} }
+  markBackup();
+  $('#bkMsg').textContent = ok ? '已复制。粘贴到备忘录或聊天里保存好。' : '没能自动复制：请长按上面的文本框，全选后手动复制。';
+};
+function importBackup(text){
+  let o;
+  try{ o = JSON.parse(String(text).trim()); }catch(e){ return '这不是有效的备份内容。'; }
+  if(!o || o.app !== 'study-companion') return '这不是本页面导出的备份。';
+  const have = new Set(records.map(r=>r.id)); let added = 0;
+  (o.records||[]).forEach(r=>{ if(r && r.id && !have.has(r.id)){ records.push({name:'',notes:[],...r}); have.add(r.id); added++; } });
+  records.sort((a,b)=>a.s-b.s);
+  const seen = new Set(chatLog.map(e=>e.t+'|'+e.text));
+  (o.chat||[]).forEach(e=>{ if(e && e.text && !seen.has(e.t+'|'+e.text)) chatLog.push(e); });
+  chatLog.sort((a,b)=>a.t-b.t);
+  if(o.prefs) prefs = {...prefs, ...o.prefs};
+  if(o.cfg) cfg = {...cfg, ...o.cfg, key:cfg.key, lastBackup:Math.max(cfg.lastBackup||0, o.cfg.lastBackup||0)};
+  if(o.bgimg){ bgImgData = o.bgimg; store.set('sc:bgimg', o.bgimg); }
+  applyPrefsUI(); rebuildFeed(); render(); fillSettings();
+  saveRecords(); flushChat(); savePrefs(); saveCfg();
+  return `已恢复：新增 ${added} 条专注记录，聊天记录已合并。`;
+}
+$('#bkPaste').onclick = ()=>{ const t = $('#bkText').value; $('#bkMsg').textContent = t.trim() ? importBackup(t) : '请先把备份文本粘贴到上面的文本框。'; };
+$('#bkFile').onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{ $('#bkMsg').textContent = importBackup(rd.result); };
+  rd.onerror = ()=>{ $('#bkMsg').textContent = '读取文件失败。'; };
+  rd.readAsText(f); e.target.value = '';
+};
+
+/* ================= 对话 ================= */
+const FALLBACK = ['我在这儿，一次只做一件事。','你做得很好，继续吧。','嗯，我听到了。先深呼吸，再读下一段。','好，我哪儿也不去。','没关系，小小的一步也算数。'];
+const history = [];
+async function ai(){
+  if(!llmReady()) return null;
+  const sys = `你是「${myName()}」，一个安静温柔的学习陪伴者，正坐在用户身边陪他学习。${running?'用户正在专注中，本次已 '+fmtClock(segMs())+(curName?'，这次专注叫「'+curName+'」':'')+(curNotes.length?'，最近在做：'+curNotes[curNotes.length-1].text:'')+'。':'用户目前没有在计时。'}今天已完成 ${todayRecords().length} 次专注，共 ${Math.round(todayMs()/60000)} 分钟。你现在${currentAct?currentAct.s:'安静地坐在旁边'}。请用中文回复，1到2句话，不超过40个字，语气温柔、踏实，像一个安静的朋友。不要列清单，不要用表情符号，不要说教。如果用户看起来卡住或累了，鼓励一个很小的下一步或短暂休息。`;
+  try{ return await callLLM(sys, history.slice(-8), 300); }catch(e){ return null; }
+}
+function parseNameCmd(t){
+  const q = '[：:\\s]*[「"“]?(.+?)[」"”]?$';
+  const pats = [
+    new RegExp('^(?:请)?(?:把)?(?:这次|本次|当前)(?:专注)?(?:命名为|命名成|叫做|叫作|叫|改名为|改成|取名为|取名叫|标记为|设为|是)'+q),
+    new RegExp('^(?:命名|取名|改名)(?:为|成)?'+q),
+    new RegExp('^(?:给)?(?:这次|本次)(?:专注)?(?:起名|取名|命名)(?:为|叫)?'+q),
+  ];
+  for(const p of pats){ const m = t.match(p); if(m && m[1]) return m[1].trim(); }
+  return null;
+}
+const cleanTask = t => t.replace(/^(?:我)?(?:现在|正)?(?:在|正在)/,'').replace(/[呢啊啦哦。.!！\s]+$/,'').trim().slice(0,24) || t.trim().slice(0,24);
+async function sendMsg(){
+  const inp = $('#inp'), text = inp.value.trim(); if(!text) return;
+  inp.value=''; addMsg('me', text);
+
+  const nm = parseNameCmd(text);
+  if(nm){
+    if(!running){ themSay('先点「开始专注」，我再帮你给这次命名。', {delay:400}); return; }
+    setCurName(nm); themSay(`好，这次专注叫「${curName}」。`, {delay:400}); return;
+  }
+  const nt = text.match(/^(?:记一下|记录一下|记录)[：:\s]*(.+)$/);
+  if(nt && running){ addCurNote(nt[1]); themSay('记下了。', {delay:300}); return; }
+
+  if(awaiting && running && Date.now() < awaitUntil){
+    awaiting = false;
+    const task = cleanTask(text);
+    if(!curName){ setCurName(task); themSay(`好，这次就记作「${curName}」。我陪你。`, {delay:500}); }
+    else { addCurNote(task); themSay(pick(['嗯，记下了。','好，继续加油。','收到，我陪着你。']), {delay:400}); }
+    return;
+  }
+
+  history.push({role:'user',content:text});
+  const reply = await ai();
+  if(!reply && cfg.key && llmErr && Date.now() - lastErrNoteAt > 5*60*1000){
+    lastErrNoteAt = Date.now(); addNote(`模型暂时连不上（${llmErr}），先用预设回复。可在「设置」里测试连接。`);
+  }
+  const out = reply || pick(FALLBACK);
+  history.push({role:'assistant',content:out});
+  themSay(out, {delay:400});
+}
+$('#send').onclick = sendMsg;
+$('#inp').onkeydown = e=>{ if(e.key==='Enter' && !e.isComposing) sendMsg(); };
+
+/* ================= 启动 ================= */
+(async function init(){
+  askPersist();
+  const p = await store.get('sc:prefs'); if(p) prefs = {...prefs, ...p};
+  const c = await store.get('sc:cfg'); if(c) cfg = {...cfg, ...c};
+  records = ((await store.get('sc:records')) || []).map(r=>({id:r.id||newId(), name:'', notes:[], ...r}));
+  // 上次页面在计时中被关闭：用最后一次心跳补记（带上名字和备注）
+  const st = await store.get('sc:state');
+  if(st && st.running){
+    const end = Math.min(st.beat || Date.now(), Date.now()), d = end - st.segStart;
+    if(d >= MIN_COUNT && d < 12*3600*1000) records.push({id:newId(), s:st.segStart, e:end, d, name:st.name||'', notes:st.notes||[]});
+  }
+  bgImgData = await store.get('sc:bgimg');
+  applyPrefsUI();
+  chatLog = (await store.get('sc:chat')) || [];
+  rebuildFeed();
+  // 把读到的内容重新写回所有存储位置（自我修复）
+  saveAll(); savePrefs(); saveCfg(); flushChat();
+  render(); ready = true;
+
+  const n = todayRecords().length;
+  setTimeout(()=>themSay(n ? `欢迎回来。今天已经专注 ${n} 次了，准备好就继续吧，我在这儿。` : '我在这儿。准备好了就点「开始专注」。', {delay:600}), 400);
+  if(records.length){
+    const days = cfg.lastBackup ? Math.floor((Date.now()-cfg.lastBackup)/86400000) : 999;
+    if(days >= 7){
+      setTimeout(()=>themSay((cfg.lastBackup ? `小提醒：记录已经 ${days} 天没有备份了。` : '小提醒：你的记录还没有备份过。') + '点「设置」里的「导出备份文件」，就算手机清理了浏览器数据，也能找回来。', {delay:600}), 4000);
+    }
+  }
+})();
+</script>
+</body>
+</html>
